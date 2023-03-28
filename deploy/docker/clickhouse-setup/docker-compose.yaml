@@ -231,6 +231,13 @@ services:
     restart: on-failure
     <<: *clickhouse-depend
 
+  blackbox:
+    image: quay.io/prometheus/blackbox-exporter
+    volumes:
+      - ./blackbox.yml:/etc/blackbox_exporter/config.yml
+    ports:
+      - '9115:9115'
+
   hotrod:
     image: jaegertracing/example-hotrod:1.30
     container_name: hotrod

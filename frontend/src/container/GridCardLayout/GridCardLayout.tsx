@@ -1,6 +1,7 @@
 import { PlusOutlined, SaveFilled } from '@ant-design/icons';
 import { SOMETHING_WENT_WRONG } from 'constants/api';
 import { PANEL_TYPES } from 'constants/queryBuilder';
+import dayjs from 'dayjs';
 import { useUpdateDashboard } from 'hooks/dashboard/useUpdateDashboard';
 import useComponentPermission from 'hooks/useComponentPermission';
 import { useIsDarkMode } from 'hooks/useDarkMode';
@@ -82,6 +83,26 @@ function GraphLayout({
 			},
 		});
 	};
+
+	const data = [
+		{
+			name: 'Series1',
+			values: [
+				{ date: dayjs('2023-10-01'), value: 100 },
+				{ date: dayjs('2023-10-02'), value: 120 },
+				// ... more data points
+			],
+		},
+		{
+			name: 'Series2',
+			values: [
+				{ date: dayjs('2023-10-01'), value: 80 },
+				{ date: dayjs('2023-10-02'), value: 110 },
+				// ... more data points
+			],
+		},
+		// ... more series
+	];
 
 	return (
 		<>

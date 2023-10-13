@@ -17,6 +17,8 @@ import EmptyWidget from '../EmptyWidget';
 import { MenuItemKeys } from '../WidgetHeader/contants';
 import { GridCardGraphProps } from './types';
 import WidgetGraphComponent from './WidgetGraphComponent';
+import { transformForD3 } from 'lib/getD3ChartData';
+import D3LineChart from 'components/D3Graphs/LineGraph';
 
 function GridCardGraph({
 	widget,
@@ -75,7 +77,7 @@ function GridCardGraph({
 				widget.timePreferance,
 			],
 			keepPreviousData: true,
-			enabled: isGraphVisible && !isEmptyWidget && isQueryEnabled,
+			enabled: !isEmptyWidget && isQueryEnabled,
 			refetchOnMount: false,
 			onError: (error) => {
 				setErrorMessage(error.message);
@@ -97,15 +99,25 @@ function GridCardGraph({
 		[queryResponse],
 	);
 
+	const chartDataFromD3 = transformForD3(
+		queryResponse?.data?.payload?.data.newResult.data || {
+			result: [],
+			resultType: '',
+		},
+	);
+
+	// console.log(chartDataFromD3);
+
 	const isEmptyLayout = widget?.id === PANEL_TYPES.EMPTY_WIDGET;
 
-	if (queryResponse.isLoading) {
+	if (queryResponse.isLoading || chartDataFromD3.length === 0) {
 		return <Skeleton />;
 	}
 
 	return (
 		<span ref={graphRef}>
-			<WidgetGraphComponent
+			<D3LineChart data={chartDataFromD3} />
+			{/* <WidgetGraphComponent
 				widget={widget}
 				queryResponse={queryResponse}
 				errorMessage={errorMessage}
@@ -116,7 +128,7 @@ function GridCardGraph({
 				threshold={threshold}
 				headerMenuList={headerMenuList}
 				onClickHandler={onClickHandler}
-			/>
+			/> */}
 
 			{isEmptyLayout && <EmptyWidget />}
 		</span>

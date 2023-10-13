@@ -1,64 +1,56 @@
 // D3LineChart.tsx
 import * as d3 from 'd3';
 import { Dayjs } from 'dayjs';
-import { useEffect, useRef, useState } from 'react';
+import { memo, useEffect, useRef, useState } from 'react';
 
 interface DataPoint {
 	date: Dayjs;
 	value: number;
 }
 
-interface DataSet {
+export interface D3DataSet {
 	name: string;
 	values: DataPoint[];
 }
 
 interface D3LineChartProps {
-	data: DataSet[];
+	data: D3DataSet[];
 }
 
 function D3LineChart({ data }: D3LineChartProps): JSX.Element {
 	const svgRef = useRef<SVGSVGElement | null>(null);
-	const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
+
+	console.log(data, 'asd');
 
 	useEffect(() => {
-		if (!svgRef.current) return;
+		if (!svgRef.current === null) return;
 
-		const resizeObserver = new ResizeObserver((entries) => {
-			if (!Array.isArray(entries) || !entries.length) return;
+		const svgWidth = svgRef?.current?.clientWidth;
+		const svgHeight = svgRef?.current?.clientHeight;
 
-			const entry = entries[0];
-			setDimensions({
-				width: entry.contentRect.width,
-				height: entry.contentRect.height,
-			});
-		});
+		if (!svgWidth || !svgHeight) return;
 
-		resizeObserver.observe(svgRef.current);
-
-		return (): void => resizeObserver.disconnect();
-	}, []);
-
-	useEffect(() => {
-		if (!dimensions.width || !dimensions.height) return;
-
-		if (data === undefined) {
+		if (data.length === 0) {
 			return;
 		}
+
+		console.log('i am here');
 
 		const svg = d3.select(svgRef.current);
 		svg.selectAll('*').remove(); // Clear previous contents
 
 		const margin = { top: 5, right: 0, bottom: 5, left: 30 };
 
-		const width = dimensions.width - margin.left - margin.right;
-		const height = dimensions.height - margin.top - margin.bottom;
+		const width = (svgWidth || 0) - margin.left - margin.right;
+		const height = (svgHeight || 0) - margin.top - margin.bottom;
 
 		// Scales
 		const x = d3.scaleUtc().range([0, width]);
 		const y = d3.scaleLinear().range([height, 0]);
 
-		x.domain(d3.extent(data[0].values, (d) => d.date.toDate()) as [Date, Date]);
+		if (data.length > 0)
+			x.domain(d3.extent(data[0]?.values, (d) => d.date.toDate()) as [Date, Date]);
+
 		y.domain([
 			0,
 			d3.max(data, (d) => d3.max(d.values, (e) => e.value)) as number,
@@ -122,9 +114,9 @@ function D3LineChart({ data }: D3LineChartProps): JSX.Element {
 				.attr('stroke-width', 2)
 				.attr('d', line);
 		});
-	}, [data, dimensions]);
+	}, []);
 
 	return <svg ref={svgRef} style={{ width: '100%', height: '100%' }} />;
 }
 
-export default D3LineChart;
+export default memo(D3LineChart);

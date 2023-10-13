@@ -84,26 +84,6 @@ function GraphLayout({
 		});
 	};
 
-	const data = [
-		{
-			name: 'Series1',
-			values: [
-				{ date: dayjs('2023-10-01'), value: 100 },
-				{ date: dayjs('2023-10-02'), value: 120 },
-				// ... more data points
-			],
-		},
-		{
-			name: 'Series2',
-			values: [
-				{ date: dayjs('2023-10-01'), value: 80 },
-				{ date: dayjs('2023-10-02'), value: 110 },
-				// ... more data points
-			],
-		},
-		// ... more series
-	];
-
 	return (
 		<>
 			<ButtonContainer>
@@ -138,7 +118,7 @@ function GraphLayout({
 				draggableHandle=".drag-handle"
 				layout={layouts}
 			>
-				{layouts.map((layout) => {
+				{layouts.slice(0, 1).map((layout) => {
 					const { i: id } = layout;
 					const currentWidget = (widgets || [])?.find((e) => e.id === id);
 

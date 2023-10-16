@@ -3,7 +3,7 @@ import { GraphOnClickHandler, ToggleGraphProps } from 'components/Graph/types';
 import { MutableRefObject, ReactNode } from 'react';
 import { UseQueryResult } from 'react-query';
 import { ErrorResponse, SuccessResponse } from 'types/api';
-import { Widgets } from 'types/api/dashboard/getAll';
+import { IDashboardVariable, Widgets } from 'types/api/dashboard/getAll';
 import { MetricRangePayloadProps } from 'types/api/metrics/getQueryRange';
 
 import { MenuItemKeys } from '../WidgetHeader/contants';
@@ -36,7 +36,7 @@ export interface GridCardGraphProps {
 	onClickHandler?: GraphOnClickHandler;
 	threshold?: ReactNode;
 	headerMenuList?: WidgetGraphComponentProps['headerMenuList'];
-	isQueryEnabled: boolean;
+	variables?: Record<string, IDashboardVariable>;
 }
 
 export interface GetGraphVisibilityStateOnLegendClickProps {

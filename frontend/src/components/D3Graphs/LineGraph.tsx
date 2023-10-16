@@ -20,7 +20,7 @@ interface D3LineChartProps {
 function D3LineChart({ data }: D3LineChartProps): JSX.Element {
 	const svgRef = useRef<SVGSVGElement | null>(null);
 
-	console.log(data, 'asd');
+	console.log('i am rendering', 'asd');
 
 	useEffect(() => {
 		if (!svgRef.current === null) return;
@@ -34,8 +34,7 @@ function D3LineChart({ data }: D3LineChartProps): JSX.Element {
 			return;
 		}
 
-		console.log('i am here');
-
+		console.log('i m re-calculating', 'asd');
 		const svg = d3.select(svgRef.current);
 		svg.selectAll('*').remove(); // Clear previous contents
 
@@ -114,7 +113,7 @@ function D3LineChart({ data }: D3LineChartProps): JSX.Element {
 				.attr('stroke-width', 2)
 				.attr('d', line);
 		});
-	}, []);
+	}, [data]);
 
 	return <svg ref={svgRef} style={{ width: '100%', height: '100%' }} />;
 }

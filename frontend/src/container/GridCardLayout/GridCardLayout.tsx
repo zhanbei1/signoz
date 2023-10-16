@@ -1,7 +1,6 @@
 import { PlusOutlined, SaveFilled } from '@ant-design/icons';
 import { SOMETHING_WENT_WRONG } from 'constants/api';
 import { PANEL_TYPES } from 'constants/queryBuilder';
-import dayjs from 'dayjs';
 import { useUpdateDashboard } from 'hooks/dashboard/useUpdateDashboard';
 import useComponentPermission from 'hooks/useComponentPermission';
 import { useIsDarkMode } from 'hooks/useDarkMode';
@@ -24,23 +23,26 @@ import {
 } from './styles';
 import { GraphLayoutProps } from './types';
 
-function GraphLayout({
-	onAddPanelHandler,
-	widgets,
-}: GraphLayoutProps): JSX.Element {
+function GraphLayout({ onAddPanelHandler }: GraphLayoutProps): JSX.Element {
 	const {
 		selectedDashboard,
 		layouts,
 		setLayouts,
 		setSelectedDashboard,
 	} = useDashboard();
+	const { data } = selectedDashboard || {};
+
+	const { widgets, variables } = data || {};
+
 	const { t } = useTranslation(['dashboard']);
 
-	const { featureResponse, role } = useSelector<AppState, AppReducer>(
-		(state) => state.app,
+	const role = useSelector<AppState, AppReducer['role']>(
+		(state) => state.app.role,
 	);
 
-	const isDarkMode = useIsDarkMode();
+	const featureResponse = useSelector<AppState, AppReducer['featureResponse']>(
+		(state) => state.app.featureResponse,
+	);
 
 	const updateDashboardMutation = useUpdateDashboard();
 
@@ -84,6 +86,8 @@ function GraphLayout({
 		});
 	};
 
+	const isDarkMode = useIsDarkMode();
+
 	return (
 		<>
 			<ButtonContainer>
@@ -116,9 +120,11 @@ function GraphLayout({
 				allowOverlap={false}
 				onLayoutChange={setLayouts}
 				draggableHandle=".drag-handle"
+				draggableCancel=".drag-cancel"
 				layout={layouts}
+				useCSSTransforms
 			>
-				{layouts.slice(0, 1).map((layout) => {
+				{layouts.map((layout) => {
 					const { i: id } = layout;
 					const currentWidget = (widgets || [])?.find((e) => e.id === id);
 
@@ -128,6 +134,8 @@ function GraphLayout({
 								<GridCard
 									widget={currentWidget || ({ id } as Widgets)}
 									name={currentWidget?.id || ''}
+									key={id}
+									variables={variables}
 									headerMenuList={headerMenuList}
 								/>
 							</Card>

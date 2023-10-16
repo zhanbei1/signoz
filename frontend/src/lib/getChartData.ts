@@ -5,7 +5,7 @@ import { QueryData } from 'types/api/widgets/getQuery';
 import convertIntoEpoc from './covertIntoEpoc';
 import { colors } from './getRandomColor';
 
-export const limit = 2;
+export const limit = 40;
 
 const getChartData = ({
 	queryData,
@@ -18,8 +18,8 @@ const getChartData = ({
 } => {
 	const uniqueTimeLabels = new Set<number>();
 	queryData.forEach((data) => {
-		data.queryData.forEach((query) => {
-			query.values.forEach((value) => {
+		data?.queryData?.forEach((query) => {
+			query?.values?.forEach((value) => {
 				uniqueTimeLabels.add(value[0]);
 			});
 		});

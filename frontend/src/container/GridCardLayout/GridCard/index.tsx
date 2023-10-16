@@ -1,24 +1,44 @@
-import { Skeleton } from 'antd';
+import 'uplot/dist/uPlot.min.css';
+
+import { Card, Skeleton, Typography } from 'antd';
+import D3LineChart from 'components/D3Graphs/LineGraph';
 import { PANEL_TYPES } from 'constants/queryBuilder';
+import dayjs from 'dayjs';
+import Highcharts from 'highcharts';
+import HighchartsReact from 'highcharts-react-official';
 import { useGetQueryRange } from 'hooks/queryBuilder/useGetQueryRange';
 import { useStepInterval } from 'hooks/queryBuilder/useStepInterval';
+import useDebouncedFn from 'hooks/useDebouncedFunction';
 import { getDashboardVariables } from 'lib/dashbaordVariables/getDashboardVariables';
 import getChartData from 'lib/getChartData';
+import {
+	getD3ChartData,
+	getUPlotChartData,
+	transformForD3,
+} from 'lib/getD3ChartData';
 import isEmpty from 'lodash-es/isEmpty';
 import { useDashboard } from 'providers/Dashboard/Dashboard';
-import { memo, useMemo, useState } from 'react';
+import { memo, useEffect, useMemo, useRef, useState } from 'react';
 import { useInView } from 'react-intersection-observer';
 import { useDispatch, useSelector } from 'react-redux';
+import { useDebounce } from 'react-use';
 import { UpdateTimeInterval } from 'store/actions';
 import { AppState } from 'store/reducers';
+import { MetricRangePayloadV3 } from 'types/api/metrics/getQueryRange';
 import { GlobalReducer } from 'types/reducer/globalTime';
+import uPlot from 'uplot';
 
 import EmptyWidget from '../EmptyWidget';
 import { MenuItemKeys } from '../WidgetHeader/contants';
+import UplotComponent from './Chart';
 import { GridCardGraphProps } from './types';
 import WidgetGraphComponent from './WidgetGraphComponent';
-import { transformForD3 } from 'lib/getD3ChartData';
-import D3LineChart from 'components/D3Graphs/LineGraph';
+
+// const worker = new Worker(`/worker.js`);
+
+// worker.onerror = (e) => {
+// 	console.log(e);
+// };
 
 function GridCardGraph({
 	widget,
@@ -27,10 +47,16 @@ function GridCardGraph({
 	headerMenuList = [MenuItemKeys.View],
 	isQueryEnabled,
 	threshold,
+	variables,
 }: GridCardGraphProps): JSX.Element {
 	const dispatch = useDispatch();
 	const [errorMessage, setErrorMessage] = useState<string>();
 
+	// worker.onmessage = (e) => {
+	// 	const { uPlotData, seriesConfigurations } = e.data;
+
+	// 	console.log({ uPlotData, seriesConfigurations }, widget.id);
+	// };
 	const onDragSelect = (start: number, end: number): void => {
 		const startTimestamp = Math.trunc(start);
 		const endTimestamp = Math.trunc(end);
@@ -40,20 +66,16 @@ function GridCardGraph({
 		}
 	};
 
-	const { ref: graphRef, inView: isGraphVisible } = useInView({
-		threshold: 0,
-		triggerOnce: true,
-		initialInView: false,
-	});
+	// const { ref: graphRef, inView: isGraphVisible } = useInView({
+	// 	threshold: 0,
+	// 	triggerOnce: true,
+	// 	initialInView: false,
+	// });
 
-	const { selectedDashboard } = useDashboard();
-
-	const { minTime, maxTime, selectedTime: globalSelectedInterval } = useSelector<
+	const { minTime, maxTime, selectedTime } = useSelector<
 		AppState,
 		GlobalReducer
 	>((state) => state.globalTime);
-
-	const updatedQuery = useStepInterval(widget?.query);
 
 	const isEmptyWidget =
 		widget?.id === PANEL_TYPES.EMPTY_WIDGET || isEmpty(widget);
@@ -62,16 +84,16 @@ function GridCardGraph({
 		{
 			selectedTime: widget?.timePreferance,
 			graphType: widget?.panelTypes,
-			query: updatedQuery,
-			globalSelectedInterval,
-			variables: getDashboardVariables(selectedDashboard?.data.variables),
+			query: useStepInterval(widget?.query),
+			globalSelectedInterval: selectedTime,
+			variables: getDashboardVariables(variables),
 		},
 		{
 			queryKey: [
 				maxTime,
 				minTime,
-				globalSelectedInterval,
-				selectedDashboard?.data?.variables,
+				selectedTime,
+				variables,
 				widget?.query,
 				widget?.panelTypes,
 				widget.timePreferance,
@@ -85,38 +107,109 @@ function GridCardGraph({
 		},
 	);
 
-	const chartData = useMemo(
-		() =>
-			getChartData({
-				queryData: [
-					{
-						queryData: queryResponse?.data?.payload?.data?.result || [],
-					},
-				],
-				createDataset: undefined,
-				isWarningLimit: true,
-			}),
-		[queryResponse],
-	);
+	if (queryResponse.isLoading) {
+		return <Typography>Loading</Typography>;
+	}
 
-	const chartDataFromD3 = transformForD3(
-		queryResponse?.data?.payload?.data.newResult.data || {
+	// const chartDataFromD3 = transformForD3(
+	// 	queryResponse?.data?.payload?.data || {
+	// 		result: [],
+	// 		resultType: '',
+	// 	},
+	// );
+	// const d3 = getD3ChartData(
+	// 	queryResponse?.data?.payload?.data || {
+	// 		result: [],
+	// 		resultType: '',
+	// 	},
+	// );
+
+	const uplotData = getUPlotChartData(
+		queryResponse?.data?.payload?.data || {
 			result: [],
 			resultType: '',
 		},
 	);
 
-	// console.log(chartDataFromD3);
+	// console.log({ asd, queryResponse, chartContainerRef });
 
 	const isEmptyLayout = widget?.id === PANEL_TYPES.EMPTY_WIDGET;
 
-	if (queryResponse.isLoading || chartDataFromD3.length === 0) {
-		return <Skeleton />;
+	function generateSeriesConfigurations(data) {
+		const configurations = [{ label: 'Timestamp', stroke: 'purple' }];
+
+		// console.log({ data });
+
+		// const seriesList = data?.data?.result[0]?.series || [];
+		// const colors = [
+		// 	'red',
+		// 	'blue',
+		// 	'green',
+		// 	'orange',
+		// 	'purple',
+		// 	'cyan',
+		// 	'magenta',
+		// 	'yellow',
+		// 	'brown',
+		// 	'lime',
+		// ];
+
+		// for (let i = 0; i < seriesList?.length; i += 1) {
+		// 	const color = colors[i % colors.length]; // Use modulo to loop through colors if there are more series than colors
+
+		// 	configurations.push({ label: `Series ${i + 1}`, stroke: color });
+		// }
+
+		return configurations;
 	}
 
+	const options = {
+		width: 300,
+		height: 300,
+		scales: {
+			x: {
+				time: true,
+			},
+		},
+		legend: {
+			show: false,
+		},
+		focus: {
+			alpha: 1,
+		},
+		series: generateSeriesConfigurations(queryResponse.data?.payload),
+		axes: [
+			{
+				values: (u, vals, space) =>
+					vals.map((v) => {
+						const date = new Date(v);
+						return `${date.getMonth() + 1}-${date.getDate()}-${date.getFullYear()}`;
+					}),
+				grid: { show: true },
+				ticks: { show: true },
+				space: 60, // minimum spacing (in pixels) between ticks
+				label: 'Date',
+				size: 80, // can be used to set fixed size
+			},
+			{},
+		],
+	};
+
+	console.log({ options, uplotData });
+
 	return (
-		<span ref={graphRef}>
-			<D3LineChart data={chartDataFromD3} />
+		<>
+			{/* <HighchartsReact highcharts={Highcharts} options={chartDataFromD3} /> */}
+			{/* <div>
+				<UplotComponent options={options} data={asd} />
+			</div> */}
+
+			<div>asd</div>
+
+			{/* <Card>
+				<D3LineChart data={d3} />
+			</Card> */}
+
 			{/* <WidgetGraphComponent
 				widget={widget}
 				queryResponse={queryResponse}
@@ -131,16 +224,8 @@ function GridCardGraph({
 			/> */}
 
 			{isEmptyLayout && <EmptyWidget />}
-		</span>
+		</>
 	);
 }
-
-GridCardGraph.defaultProps = {
-	onDragSelect: undefined,
-	onClickHandler: undefined,
-	isQueryEnabled: true,
-	threshold: undefined,
-	headerMenuList: [MenuItemKeys.View],
-};
 
 export default memo(GridCardGraph);

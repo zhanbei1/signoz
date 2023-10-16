@@ -153,3 +153,7 @@ export const LogsIndexToFields = Loadable(
 export const PipelinePage = Loadable(
 	() => import(/* webpackChunkName: "Pipelines" */ 'pages/Pipelines'),
 );
+
+export const ChartsPage = Loadable(
+	() => import(/* webpackChunkName: "Charts" */ 'pages/Charts'),
+);

@@ -4,6 +4,7 @@ import { RouteProps } from 'react-router-dom';
 import {
 	AllAlertChannels,
 	AllErrors,
+	ChartsPage,
 	CreateAlertChannelAlerts,
 	CreateNewAlerts,
 	DashboardPage,
@@ -283,6 +284,13 @@ const routes: AppRoutes[] = [
 		exact: true,
 		component: PipelinePage,
 		key: 'PIPELINES',
+		isPrivate: true,
+	},
+	{
+		path: ROUTES.CHARTS,
+		exact: true,
+		component: ChartsPage,
+		key: 'CHARTS',
 		isPrivate: true,
 	},
 ];

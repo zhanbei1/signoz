@@ -38,6 +38,7 @@ const ROUTES = {
 	LOGS_PIPELINE: '/logs-explorer/pipeline',
 	TRACE_EXPLORER: '/trace-explorer',
 	PIPELINES: '/pipelines',
+	CHARTS: '/charts',
 };
 
 export default ROUTES;

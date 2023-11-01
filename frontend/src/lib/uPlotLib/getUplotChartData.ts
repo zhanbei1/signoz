@@ -49,8 +49,6 @@ const getSeries = (
 
 	const seriesList = apiResponse?.data.result || [];
 
-	// console.log('seriesList', seriesList);
-
 	for (let i = 0; i < seriesList?.length; i += 1) {
 		const color = colors[i % colors.length]; // Use modulo to loop through colors if there are more series than colors
 
@@ -104,8 +102,6 @@ const createDivsFromArray = (
 	const container = document.createElement('div');
 	container.classList.add('tooltip-container');
 
-	// console.log('seriesList', seriesList);
-
 	if (Array.isArray(data) && data.length > 0) {
 		data.forEach((item, index) => {
 			const div = document.createElement('div');
@@ -141,9 +137,6 @@ const createDivsFromArray = (
 						queryName || '', // query
 						legend || '',
 					);
-
-					// console.log('label', label);
-
 					const tooltipValue = getToolTipValue(item[idx], yAxisUnit);
 
 					text.textContent = `${label} : ${tooltipValue}`;
@@ -210,7 +203,6 @@ const tooltipPlugin = (
 				cursor: { left: any; top: any; idx: any };
 				data: any[];
 			}): void => {
-				console.log('u', u);
 				if (overlay) {
 					overlay.textContent = '';
 					const { left, top, idx } = u.cursor;

@@ -84,6 +84,24 @@
 	}
 }
 
+.ant-tree-title {
+	.parent-title-container {
+		.parent-title {
+			display: flex;
+			align-items: center;
+			gap: 8px;
+
+			.title-icon {
+				color: #454c58; // color to match antd tree lines
+
+				&.hidden {
+					visibility: hidden;
+				}
+			}
+		}
+	}
+}
+
 .lightMode {
 	.attribute-table-container {
 		.ant-table {

@@ -1,3 +1,5 @@
+import { LineOutlined } from '@ant-design/icons';
+import { Tooltip } from 'antd';
 import { DataNode } from 'antd/es/tree';
 import { MetricsType } from 'container/MetricsApplication/constant';
 import { uniqueId } from 'lodash-es';
@@ -29,6 +31,20 @@ export const recursiveParseJSON = (obj: string): Record<string, unknown> => {
 	}
 };
 
+const renderParentTitle = (key: string, valueIsArray: boolean): JSX.Element => (
+	<div className="parent-title-container">
+		<div className="parent-title">
+			<div className="title-icon">
+				<LineOutlined />
+			</div>
+
+			<Tooltip title={key}>
+				{key} {valueIsArray ? '[...]' : ''}
+			</Tooltip>
+		</div>
+	</div>
+);
+
 export const computeDataNode = (
 	key: string,
 	valueIsArray: boolean,
@@ -36,7 +52,7 @@ export const computeDataNode = (
 	nodeKey: string,
 ): DataNode => ({
 	key: uniqueId(),
-	title: `${key} ${valueIsArray ? '[...]' : ''}`,
+	title: renderParentTitle(key, valueIsArray),
 	// eslint-disable-next-line @typescript-eslint/no-use-before-define
 	children: jsonToDataNodes(
 		value as Record<string, unknown>,

@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"math"
 	"net/http"
 	"regexp"
@@ -342,7 +343,7 @@ func (aH *APIHandler) RegisterQueryRangeV3Routes(router *mux.Router, am *AuthMid
 	// live logs
 	subRouter.HandleFunc("/logs/livetail", am.ViewAccess(aH.liveTailLogs)).Methods(http.MethodGet)
 
-	subRouter.HandleFunc("/logs/patterns",am.ViewAccess(aH.getLogsPatterns)).Methods(http.MethodGet)
+	subRouter.HandleFunc("/logs/patterns", am.ViewAccess(aH.getLogsPatterns)).Methods(http.MethodGet)
 }
 
 func (aH *APIHandler) RegisterWebSocketPaths(router *mux.Router, am *AuthMiddleware) {
@@ -3551,6 +3552,10 @@ func (aH *APIHandler) autoCompleteAttributeValues(w http.ResponseWriter, r *http
 	aH.Respond(w, response)
 }
 
+type LogPatterns struct {
+	Lines [][]string `json:"lines"`
+}
+
 func (aH *APIHandler) getSpanKeysV3(ctx context.Context, queryRangeParams *v3.QueryRangeParamsV3) (map[string]v3.AttributeKey, error) {
 	data := map[string]v3.AttributeKey{}
 	for _, query := range queryRangeParams.CompositeQuery.BuilderQueries {
@@ -3698,7 +3703,36 @@ func (aH *APIHandler) queryRangeV3(ctx context.Context, queryRangeParams *v3.Que
 		break
 	}
 
-	aH.Respond(w, resp)
+	// covert the response to List[List] format
+
+	logBodies := LogPatterns{}
+
+	for _, query := range resp.Result {
+		for _, seria := range query.Series {
+			logBodies.Lines = append(logBodies.Lines, []string{seria.Labels["body"], seria.Labels["body"]})
+		}
+	}
+
+	// make a post request to http://127.0.0.1:8000/logs with the above format as parameters
+
+	hClient := &http.Client{}
+	jsonData, err := json.Marshal(logBodies)
+	req, err := http.NewRequest("POST", "http://127.0.0.1:8000/logs", bytes.NewBuffer(jsonData))
+	if err != nil {
+		RespondError(w, model.InternalError(err), nil)
+		return
+	}
+	patternsResp, err := hClient.Do(req)
+
+	body, err := ioutil.ReadAll(patternsResp.Body)
+	if err != nil {
+		fmt.Println("Error reading response body:", err)
+		return
+	}
+
+	fmt.Println("Response status:", patternsResp.Status)
+	fmt.Println("Response body:", string(body))
+	aH.Respond(w, string(body))
 }
 
 func sendQueryResultEvents(r *http.Request, result []*v3.Result, queryRangeParams *v3.QueryRangeParamsV3) {
@@ -3799,6 +3833,8 @@ func (aH *APIHandler) QueryRangeV3(w http.ResponseWriter, r *http.Request) {
 		RespondError(w, &model.ApiError{Typ: model.ErrorInternal, Err: temporalityErr}, nil)
 		return
 	}
+
+	fmt.Println("query range params", queryRangeParams)
 
 	aH.queryRangeV3(r.Context(), queryRangeParams, w, r)
 }
@@ -4043,8 +4079,22 @@ func (aH *APIHandler) liveTailLogs(w http.ResponseWriter, r *http.Request) {
 
 func (aH *APIHandler) getLogsPatterns(w http.ResponseWriter, r *http.Request) {
 
-	// call the query range API with the correct body and extract the result. 
+	// call the query range API with the correct body and extract the result.
 
+	queryRangeParams := &v3.QueryRangeParamsV3{
+		Start: 1727204141000,
+		End:   1727204441000,
+		CompositeQuery: &v3.CompositeQuery{
+			ClickHouseQueries: map[string]*v3.ClickHouseQuery{
+				"A": {
+					Query: "SELECT body,toFloat64(count(*)) as value FROM signoz_logs.distributed_logs_v2 WHERE timestamp >= 1727207111000000000 AND timestamp <= 1727207411000000000 GROUP BY body ORDER BY value DESC LIMIT 1000 SETTINGS max_threads = 12, min_bytes_to_use_direct_io=1;",
+				},
+			},
+			QueryType: v3.QueryTypeClickHouseSQL,
+		},
+	}
+
+	aH.queryRangeV3(r.Context(), queryRangeParams, w, r)
 
 	// feed the result to the drain3 model and then combine it with the above result
 }

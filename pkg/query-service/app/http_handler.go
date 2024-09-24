@@ -341,6 +341,8 @@ func (aH *APIHandler) RegisterQueryRangeV3Routes(router *mux.Router, am *AuthMid
 
 	// live logs
 	subRouter.HandleFunc("/logs/livetail", am.ViewAccess(aH.liveTailLogs)).Methods(http.MethodGet)
+
+	subRouter.HandleFunc("/logs/patterns",am.ViewAccess(aH.getLogsPatterns)).Methods(http.MethodGet)
 }
 
 func (aH *APIHandler) RegisterWebSocketPaths(router *mux.Router, am *AuthMiddleware) {
@@ -4037,6 +4039,14 @@ func (aH *APIHandler) liveTailLogs(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+}
+
+func (aH *APIHandler) getLogsPatterns(w http.ResponseWriter, r *http.Request) {
+
+	// call the query range API with the correct body and extract the result. 
+
+
+	// feed the result to the drain3 model and then combine it with the above result
 }
 
 func (aH *APIHandler) getMetricMetadata(w http.ResponseWriter, r *http.Request) {

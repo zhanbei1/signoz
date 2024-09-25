@@ -3702,18 +3702,19 @@ func (aH *APIHandler) queryRangeV3(ctx context.Context, queryRangeParams *v3.Que
 	default:
 		break
 	}
-
-	// covert the response to List[List] format
-
+	
 	logBodies := LogPatterns{}
 
+	processingTime := time.Now()
 	for _, query := range resp.Result {
 		for _, seria := range query.Series {
 			logBodies.Lines = append(logBodies.Lines, []string{seria.Labels["body"], seria.Labels["body"]})
 		}
 	}
 
-	// make a post request to http://127.0.0.1:8000/logs with the above format as parameters
+	someDuration := time.Since(processingTime)
+
+	fmt.Printf("Processing completed in %v\n", someDuration)
 
 	hClient := &http.Client{}
 	jsonData, err := json.Marshal(logBodies)
@@ -3722,7 +3723,31 @@ func (aH *APIHandler) queryRangeV3(ctx context.Context, queryRangeParams *v3.Que
 		RespondError(w, model.InternalError(err), nil)
 		return
 	}
+	// Set a timeout for the request
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	req = req.WithContext(ctx)
+
+	// Record the start time
+	start := time.Now()
+
+	// Make the request
 	patternsResp, err := hClient.Do(req)
+	if err != nil {
+		fmt.Printf("Error making request: %v\n", err)
+		RespondError(w, model.InternalError(err), nil)
+		return
+	}
+	defer patternsResp.Body.Close()
+
+	// Calculate the duration
+	duration := time.Since(start)
+
+	// Log the timing information
+	fmt.Printf("Request completed in %v\n", duration)
+	fmt.Printf("Response status: %s\n", patternsResp.Status)
+	fmt.Printf("Response headers: %v\n", patternsResp.Header)
+	// patternsResp, err := hClient.Do(req)
 
 	body, err := ioutil.ReadAll(patternsResp.Body)
 	if err != nil {
@@ -4087,7 +4112,7 @@ func (aH *APIHandler) getLogsPatterns(w http.ResponseWriter, r *http.Request) {
 		CompositeQuery: &v3.CompositeQuery{
 			ClickHouseQueries: map[string]*v3.ClickHouseQuery{
 				"A": {
-					Query: "SELECT body,toFloat64(count(*)) as value FROM signoz_logs.distributed_logs_v2 WHERE timestamp >= 1727207111000000000 AND timestamp <= 1727207411000000000 GROUP BY body ORDER BY value DESC LIMIT 1000 SETTINGS max_threads = 12, min_bytes_to_use_direct_io=1;",
+					Query: "SELECT body,toFloat64(count(*)) as value FROM signoz_logs.distributed_logs_v2 WHERE timestamp >= 1727255362000000000 AND timestamp <= 1727258962000000000 GROUP BY body ORDER BY value DESC LIMIT 10000 SETTINGS max_threads = 12, min_bytes_to_use_direct_io=1;",
 				},
 			},
 			QueryType: v3.QueryTypeClickHouseSQL,

@@ -4,6 +4,7 @@ import './LogsExplorerViews.styles.scss';
 import { Button, Typography } from 'antd';
 import { getQueryStats, WsDataEvent } from 'api/common/getQueryStats';
 import logEvent from 'api/common/logEvent';
+import { getAllPatterns } from 'api/saveView/getAllPatterns';
 import { getYAxisFormattedValue } from 'components/Graph/yAxisConfig';
 import LogsFormatOptionsMenu from 'components/LogsFormatOptionsMenu/LogsFormatOptionsMenu';
 import { DEFAULT_ENTITY_VERSION } from 'constants/app';
@@ -16,6 +17,7 @@ import {
 	initialQueryBuilderFormValues,
 	PANEL_TYPES,
 } from 'constants/queryBuilder';
+import { REACT_QUERY_KEY } from 'constants/reactQueryKeys';
 import { DEFAULT_PER_PAGE_VALUE } from 'container/Controls/config';
 import Download from 'container/DownloadV2/DownloadV2';
 import ExplorerOptionWrapper from 'container/ExplorerOptions/ExplorerOptionWrapper';
@@ -59,6 +61,7 @@ import {
 	useRef,
 	useState,
 } from 'react';
+import { useQuery } from 'react-query';
 import { useSelector } from 'react-redux';
 import { useHistory } from 'react-router-dom';
 import { AppState } from 'store/reducers';
@@ -289,6 +292,15 @@ function LogsExplorerViews({
 				selectedPanelType !== PANEL_TYPES.LIST && { 'X-SIGNOZ-QUERY-ID': queryId }),
 		},
 	);
+
+	const { data: patterns } = useQuery([REACT_QUERY_KEY.ALERT_RULE_STATS], {
+		queryFn: () => getAllPatterns(),
+		enabled: true,
+		refetchOnMount: false,
+		refetchOnWindowFocus: false,
+	});
+
+	console.log(JSON.parse(patterns?.data?.data || '{}'));
 
 	const getRequestData = useCallback(
 		(
@@ -593,7 +605,7 @@ function LogsExplorerViews({
 		if (!stagedQuery) return [];
 
 		if (panelType === PANEL_TYPES.LIST) {
-			if (listChartData && listChartData.payload.data.result.length > 0) {
+			if (listChartData && listChartData.payload.data.result?.length > 0) {
 				return listChartData.payload.data.result;
 			}
 			return [];

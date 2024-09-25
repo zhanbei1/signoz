@@ -43,7 +43,11 @@ async def getPatterns(log_data: LogData):
         pattern_id = str(pattern["cluster_id"])
         patterns[pattern_id] = pattern["template_mined"]
         result[log_id] = pattern_id
-        
+    
+    t2 = time.time()
+    execution_time = t2 - t1
+    print(f"Execution time: {execution_time:.4f} seconds")
+    
     return {
         "patterns": patterns,
         "result": result,
